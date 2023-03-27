@@ -3,3 +3,45 @@
 [0m[31m[error] [0mfailed to initialize database, got error failed to connect to `host=cD3vw4VsHv3q user=MWCrmdIwS6A= database=port=5432`: hostname resolving error (lookup cD3vw4VsHv3q: no such host)
 Port:  8002
 2023/03/27 14:23:30 failed to listen: listen tcp4: address ::8002: too many colons in address
+
+2023/03/27 15:23:37 [35m/Users/g.tan/Projects/Dashboards/pkg/utils/go-utils/database/database.go:39
+[0m[31m[error] [0mfailed to initialize database, got error failed to connect to `host=cD3vw4VsHv3q user=MWCrmdIwS6A= database=port=5432`: hostname resolving error (lookup cD3vw4VsHv3q: no such host)
+Port:  8002
+
+ ┌───────────────────────────────────────────────────┐ 
+ │                   Fiber v2.43.0                   │ 
+ │               http://127.0.0.1:8002               │ 
+ │       (bound on host 0.0.0.0 and port 8002)       │ 
+ │                                                   │ 
+ │ Handlers ............ 11  Processes ........... 1 │ 
+ │ Prefork ....... Disabled  PID ............. 14448 │ 
+ └───────────────────────────────────────────────────┘ 
+
+
+2023/03/27 15:25:08 [35m/Users/g.tan/Projects/Dashboards/pkg/utils/go-utils/database/database.go:39
+[0m[31m[error] [0mfailed to initialize database, got error failed to connect to `host=cD3vw4VsHv3q user=MWCrmdIwS6A= database=port=5432`: hostname resolving error (lookup cD3vw4VsHv3q: no such host)
+Port:  8002
+
+ ┌───────────────────────────────────────────────────┐ 
+ │                   Fiber v2.43.0                   │ 
+ │               http://127.0.0.1:8002               │ 
+ │       (bound on host 0.0.0.0 and port 8002)       │ 
+ │                                                   │ 
+ │ Handlers ............ 11  Processes ........... 1 │ 
+ │ Prefork ....... Disabled  PID ............. 14672 │ 
+ └───────────────────────────────────────────────────┘ 
+
+
+2023/03/27 15:27:32 [35m/Users/g.tan/Projects/Dashboards/pkg/utils/go-utils/database/database.go:39
+[0m[31m[error] [0mfailed to initialize database, got error failed to connect to `host=cD3vw4VsHv3q user=MWCrmdIwS6A= database=port=5432`: hostname resolving error (lookup cD3vw4VsHv3q: no such host)
+Port:  8002
+
+ ┌───────────────────────────────────────────────────┐ 
+ │                   Fiber v2.43.0                   │ 
+ │               http://127.0.0.1:8002               │ 
+ │       (bound on host 0.0.0.0 and port 8002)       │ 
+ │                                                   │ 
+ │ Handlers ............ 11  Processes ........... 1 │ 
+ │ Prefork ....... Disabled  PID ............. 14939 │ 
+ └───────────────────────────────────────────────────┘ 
+

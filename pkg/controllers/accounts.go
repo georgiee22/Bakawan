@@ -11,6 +11,10 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+func HelloWorld(c *fiber.Ctx) error {
+	return c.SendString("HELLO MA'AM MAICA")
+}
+
 // get view login
 func ReportsLogin(c *fiber.Ctx) error {
 	return c.Render("login", fiber.Map{
@@ -85,9 +89,13 @@ func ReportsLoginAuth(c *fiber.Ctx) error {
 	c.Cookie(cookie)
 
 	// check if user wants to change password
-	// if ispasschange != "1" {
-	// 	return c.Redirect("/report/changepass")
-	// }
+	if ispasschange != "1" {
+		return c.JSON(response.ResponseModel{
+			RetCode: "100",
+			Message: "continue",
+			Data:    "change password",
+		})
+	}
 
 	// return c.Redirect("./protected/listreports")
 
@@ -110,7 +118,7 @@ func ChangePasswordView(c *fiber.Ctx) error {
 // post change password
 func ChangePassword(c *fiber.Ctx) error {
 	change_pass := &models.Change_Pass{}
-	// userid := c.Cookies("userid")
+	userid := c.Cookies("userid")
 
 	// body parser, parses data submitted
 	if parsErr := c.BodyParser(change_pass); parsErr != nil {
@@ -139,7 +147,7 @@ func ChangePassword(c *fiber.Ctx) error {
 		})
 	}
 
-	err = database.DBConn.Exec("UPDATE user_accounts SET password = ? WHERE user_id = ?", hashedPassword, 1).Error
+	err = database.DBConn.Exec("UPDATE user_accounts SET password = ?, is_pass_change = ? WHERE user_id = ?", hashedPassword, 1, userid).Error
 	if err != nil {
 		return c.JSON(response.ResponseModel{
 			RetCode: "203",
@@ -153,6 +161,11 @@ func ChangePassword(c *fiber.Ctx) error {
 		Message: "success",
 		Data:    "password successfuly modified",
 	})
+}
+
+// get list apps
+func ListApps(c *fiber.Ctx) error {
+	return c.SendString("HELLO MA'AM MAICA")
 }
 
 // add functionality to create account with specified category
