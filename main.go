@@ -3,6 +3,7 @@ package main
 import (
 	routers "Template/pkg/routers"
 	middleware "Template/pkg/utils"
+	"Template/pkg/utils/go-utils/database"
 	"fmt"
 	"log"
 	"os"
@@ -27,6 +28,15 @@ func main() {
 	}
 
 	// Initialize DB here
+	database.PostgreSQLConnect(
+		os.Getenv("POSTGRES_USERNAME"),
+		os.Getenv("POSTGRES_PASSWORD"),
+		os.Getenv("POSTGRES_HOST"),
+		os.Getenv("DB_NAME"),
+		os.Getenv("POSTGRES_PORT"),
+		os.Getenv("POSTGRES_SSL_MODE"),
+		os.Getenv("POSTGRES_TIMEZONE"),
+	)
 
 	// Declare & initialize fiber
 	app := fiber.New(fiber.Config{

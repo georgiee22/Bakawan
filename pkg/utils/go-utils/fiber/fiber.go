@@ -3,9 +3,12 @@
 package fiber
 
 import (
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/big"
+	seeder "math/rand"
 	"reflect"
 	"strconv"
 	"time"
@@ -264,13 +267,13 @@ func GenerateJWTSignedString(claimMaps fiber.Map) (string, error) {
 
 	t, err := token.SignedString(jwtConfig.SecretKey)
 
-	if jwtConfig.SetCookies && err == nil {
-		Ctx.c.Cookie(&fiber.Cookie{
-			Name:   "token",
-			Value:  t,
-			MaxAge: jwtConfig.CookieMaxAge,
-		})
-	}
+	// if jwtConfig.SetCookies && err == nil {
+	// 	Ctx.c.Cookie(&fiber.Cookie{
+	// 		Name:   "token",
+	// 		Value:  t,
+	// 		MaxAge: jwtConfig.CookieMaxAge,
+	// 	})
+	// }
 
 	return t, err
 }
@@ -284,4 +287,27 @@ func GetJWTClaimOfType(key string, valueType interface{}) error {
 	}
 
 	return err
+}
+
+// GenerateRandomPassword
+func GenerateRandomPassword() string {
+	const (
+		// The characters that can be used in the password
+		chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+{}|[]\\:\";'<>?,./"
+		// The length of the password
+		length = 8
+	)
+	seeder.Seed(time.Now().UnixNano())
+
+	// Generate a random password
+	password := make([]byte, length)
+	for i := range password {
+		idx, err := rand.Int(rand.Reader, big.NewInt(int64(len(chars))))
+		if err != nil {
+			panic(err)
+		}
+		password[i] = chars[idx.Int64()]
+	}
+
+	return string(password)
 }
