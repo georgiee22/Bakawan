@@ -88,7 +88,7 @@ func main() {
 			middleware.GetEnv("SSL_KEY"),
 		))
 	} else {
-		err := app.Listen(fmt.Sprintf(":%s", middleware.GetEnv("PORT")))
+		err := app.Listen(fmt.Sprintf("%s:%s", middleware.GetEnv("HOST"), middleware.GetEnv("PORT")))
 		if err != nil {
 			log.Fatal(err.Error())
 		}

@@ -20,6 +20,8 @@ func SetupPublicRoutes(app *fiber.App) {
 	datalakeRoutes := v1Endpoint.Group("/data-lake")
 	datalakeRoutes.Post("/login-authentication", controllers.ReportsLoginAuth)
 	datalakeRoutes.Post("/change-password", controllers.ChangePassword)
+	datalakeRoutes.Post("/create-account", controllers.CreateReportsAccount)
+	datalakeRoutes.Post("/change-password", controllers.ChangePassword)
 }
 
 func SetupPublicRoutesB(app *fiber.App) {

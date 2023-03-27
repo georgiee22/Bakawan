@@ -34,7 +34,7 @@ func ReportsLoginAuth(c *fiber.Ctx) error {
 	var userid string
 	var ispasschange string
 
-	err := database.DBConn.Debug().Raw("SELECT password, user_id, is_pass_change FROM report_accounts WHERE username=$1", report_accounts.Username).Row().Scan(&dbpass, &userid, &ispasschange)
+	err := database.DBConn.Debug().Raw("SELECT password, user_id, is_pass_change FROM user_accounts WHERE username=$1", report_accounts.Username).Row().Scan(&dbpass, &userid, &ispasschange)
 	if err != nil {
 		return c.JSON(response.ResponseModel{
 			RetCode: "400",
@@ -139,7 +139,7 @@ func ChangePassword(c *fiber.Ctx) error {
 		})
 	}
 
-	err = database.DBConn.Exec("UPDATE report_accounts SET password = ? WHERE user_id = ?", hashedPassword, 1).Error
+	err = database.DBConn.Exec("UPDATE user_accounts SET password = ? WHERE user_id = ?", hashedPassword, 1).Error
 	if err != nil {
 		return c.JSON(response.ResponseModel{
 			RetCode: "203",
@@ -159,10 +159,10 @@ func ChangePassword(c *fiber.Ctx) error {
 // post account creation with random password
 func CreateReportsAccount(c *fiber.Ctx) error {
 	// point to models
-	report_accounts := &models.Accounts{}
+	user_accounts := &models.User_Accounts{}
 
 	// body parser, parses data submitted
-	if parsErr := c.BodyParser(report_accounts); parsErr != nil {
+	if parsErr := c.BodyParser(user_accounts); parsErr != nil {
 		return c.JSON(response.ResponseModel{
 			RetCode: "201",
 			Message: "fail",
@@ -172,7 +172,7 @@ func CreateReportsAccount(c *fiber.Ctx) error {
 
 	// query to check if username already exist
 	var checker bool
-	err := database.DBConn.Raw("SELECT EXISTS(SELECT 1 FROM report_accounts WHERE username = $1)", report_accounts.Username).Row().Scan(&checker)
+	err := database.DBConn.Raw("SELECT EXISTS(SELECT 1 FROM user_accounts WHERE username = $1)", user_accounts.Username).Row().Scan(&checker)
 	if err != nil {
 		return c.JSON(response.ResponseModel{
 			RetCode: "203",
@@ -205,8 +205,8 @@ func CreateReportsAccount(c *fiber.Ctx) error {
 
 	// Insert new user with hashed password
 	var lastId int
-	err = database.DBConn.Raw("INSERT INTO report_accounts (username, password) VALUES (?, ?) RETURNING user_id",
-		report_accounts.Username, hashedPassword).Scan(&lastId).Error
+	err = database.DBConn.Raw("INSERT INTO user_accounts (username, password) VALUES (?, ?) RETURNING user_id",
+		user_accounts.Username, hashedPassword).Scan(&lastId).Error
 	if err != nil {
 		return c.JSON(response.ResponseModel{
 			RetCode: "203",
@@ -216,15 +216,6 @@ func CreateReportsAccount(c *fiber.Ctx) error {
 	}
 
 	// Insert User Details
-	// err = database.DBConn.Exec("INSERT INTO contacts (account_id, email, contact) VALUES (?, ?, ?)",
-	// 	lastId, contacts.Email, contacts.Contact).Error
-	// if err != nil {
-	// 	return c.JSON(response.ResponseModel{
-	// 		RetCode: "203",
-	// 		Message: "query error",
-	// 		Data:    err.Error(),
-	// 	})
-	// }
 
 	// return message
 	return c.JSON(response.ResponseModel{

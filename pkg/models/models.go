@@ -36,6 +36,14 @@ type Report_Accounts struct {
 	Is_pass_change int    `json:"ispasschange"`
 }
 
+// new model
+type User_Accounts struct {
+	User_id        int    `json:"userid"`
+	Username       string `json:"username"`
+	Password       string `json:"password"`
+	Is_pass_change int    `json:"ispasschange"`
+}
+
 type Change_Pass struct {
 	User_id          int    `json:"userid"`
 	Username         string `json:"username"`
