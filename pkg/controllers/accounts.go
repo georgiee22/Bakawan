@@ -6,13 +6,13 @@ import (
 	"Template/pkg/utils/go-utils/database"
 	goUtils "Template/pkg/utils/go-utils/fiber"
 	"Template/pkg/utils/go-utils/passwordHashing"
-	"time"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 func HelloWorld(c *fiber.Ctx) error {
-	return c.SendString("HELLO MA'AM MAICA")
+	c.Set("Authorization", "hehe")
+	return c.SendString("HELLO MA'AM MAIC")
 }
 
 // get view login
@@ -24,9 +24,9 @@ func ReportsLogin(c *fiber.Ctx) error {
 
 // add functionality, if first login ask to change password else continue to home
 func ReportsLoginAuth(c *fiber.Ctx) error {
-	report_accounts := &models.Report_Accounts{}
+	user_accounts := &models.User_Accounts{}
 
-	if parsErr := c.BodyParser(report_accounts); parsErr != nil {
+	if parsErr := c.BodyParser(user_accounts); parsErr != nil {
 		return c.JSON(response.ResponseModel{
 			RetCode: "201",
 			Message: "fail",
@@ -38,7 +38,7 @@ func ReportsLoginAuth(c *fiber.Ctx) error {
 	var userid string
 	var ispasschange string
 
-	err := database.DBConn.Debug().Raw("SELECT password, user_id, is_pass_change FROM user_accounts WHERE username=$1", report_accounts.Username).Row().Scan(&dbpass, &userid, &ispasschange)
+	err := database.DBConn.Debug().Raw("SELECT password, user_id, is_pass_change FROM user_accounts WHERE username=$1", user_accounts.Username).Row().Scan(&dbpass, &userid, &ispasschange)
 	if err != nil {
 		return c.JSON(response.ResponseModel{
 			RetCode: "400",
@@ -47,7 +47,7 @@ func ReportsLoginAuth(c *fiber.Ctx) error {
 		})
 	}
 
-	if !passwordHashing.CheckPasswordHash(report_accounts.Password, dbpass) {
+	if !passwordHashing.CheckPasswordHash(user_accounts.Password, dbpass) {
 		return c.JSON(response.ResponseModel{
 			RetCode: "400",
 			Message: "fail",
@@ -56,7 +56,7 @@ func ReportsLoginAuth(c *fiber.Ctx) error {
 	}
 
 	claims := fiber.Map{
-		"username": report_accounts.Username,
+		"username": user_accounts.Username,
 		"userid":   userid,
 	}
 
@@ -72,21 +72,23 @@ func ReportsLoginAuth(c *fiber.Ctx) error {
 	//c.ClearCookie()
 
 	//Set the JWT token in a cookie
-	cookie := new(fiber.Cookie)
-	cookie.Name = "token"
-	cookie.Value = token
-	cookie.Expires = time.Now().Add(time.Minute * 5) // Expires in 15 mins
-	cookie.HTTPOnly = true                           // Cannot be accessed by JavaScript
-	cookie.Secure = false                            // Only transmitted over HTTPS
-	c.Cookie(cookie)
+	// cookie := new(fiber.Cookie)
+	// cookie.Name = "token"
+	// cookie.Value = token
+	// cookie.Expires = time.Now().Add(time.Minute * 5) // Expires in 15 mins
+	// cookie.HTTPOnly = true                           // Cannot be accessed by JavaScript
+	// cookie.Secure = false                            // Only transmitted over HTTPS
+	// c.Cookie(cookie)
 
-	cookie = new(fiber.Cookie)
-	cookie.Name = "userid"
-	cookie.Value = userid
-	cookie.Expires = time.Now().Add(time.Minute * 5) // Expires in 15 mins
-	cookie.HTTPOnly = false                          // Cannot be accessed by JavaScript
-	cookie.Secure = false                            // Only transmitted over HTTPS
-	c.Cookie(cookie)
+	// cookie = new(fiber.Cookie)
+	// cookie.Name = "userid"
+	// cookie.Value = userid
+	// cookie.Expires = time.Now().Add(time.Minute * 5) // Expires in 15 mins
+	// cookie.HTTPOnly = false                          // Cannot be accessed by JavaScript
+	// cookie.Secure = false                            // Only transmitted over HTTPS
+	// c.Cookie(cookie)
+
+	c.Set("Authorization", "Bearer "+token)
 
 	// check if user wants to change password
 	if ispasschange != "1" {
@@ -97,12 +99,10 @@ func ReportsLoginAuth(c *fiber.Ctx) error {
 		})
 	}
 
-	// return c.Redirect("./protected/listreports")
-
 	return c.JSON(response.ResponseModel{
 		RetCode: "200",
 		Message: "success",
-		Data:    "Login Successfully",
+		Data:    user_accounts.Username,
 	})
 }
 
@@ -118,7 +118,7 @@ func ChangePasswordView(c *fiber.Ctx) error {
 // post change password
 func ChangePassword(c *fiber.Ctx) error {
 	change_pass := &models.Change_Pass{}
-	userid := c.Cookies("userid")
+	// userid := c.Cookies("userid")
 
 	// body parser, parses data submitted
 	if parsErr := c.BodyParser(change_pass); parsErr != nil {
@@ -147,7 +147,7 @@ func ChangePassword(c *fiber.Ctx) error {
 		})
 	}
 
-	err = database.DBConn.Exec("UPDATE user_accounts SET password = ?, is_pass_change = ? WHERE user_id = ?", hashedPassword, 1, userid).Error
+	err = database.DBConn.Exec("UPDATE user_accounts SET password = ?, is_pass_change = ? WHERE user_id = ?", hashedPassword, 1, change_pass.User_id).Error
 	if err != nil {
 		return c.JSON(response.ResponseModel{
 			RetCode: "203",
@@ -163,9 +163,45 @@ func ChangePassword(c *fiber.Ctx) error {
 	})
 }
 
-// get list apps
-func ListApps(c *fiber.Ctx) error {
-	return c.SendString("HELLO MA'AM MAICA")
+// get list dashboards
+func ListDashboards(c *fiber.Ctx) error {
+	dashboard_list := []models.Dashboard_Apps_Tags_View{}
+	id := c.Params("id")
+	result := []models.Dashboards{}
+
+	err := database.DBConn.Raw("SELECT DISTINCT dashboard_id, dashboard_title FROM dashboard_apps_tags WHERE app_id = $1", id).Find(&result, &dashboard_list).Error
+	if err != nil {
+		return c.JSON(response.ResponseModel{
+			RetCode: "203",
+			Message: "query error",
+			Data:    err.Error(),
+		})
+	}
+
+	return c.JSON(response.ResponseModel{
+		RetCode: "200",
+		Message: "success",
+		Data:    result,
+	})
+}
+
+// get send specific dashboard
+func ViewDashboard(c *fiber.Ctx) error {
+	report_id := models.Report_Looker{}
+	id := c.Params("id")
+
+	err := database.DBConn.Raw("SELECT * FROM report_looker WHERE report_id = $1", id).Find(&report_id).Error
+	if err != nil {
+		return c.JSON(response.ResponseModel{
+			RetCode: "203",
+			Message: "query error",
+			Data:    err.Error(),
+		})
+	}
+
+	return c.Render("selectreport", fiber.Map{
+		"Report_Looker": report_id,
+	})
 }
 
 // add functionality to create account with specified category
@@ -345,54 +381,6 @@ func VerifyAuth2ndLayer(c *fiber.Ctx) error {
 
 	// get report tags
 	err := database.DBConn.Raw("SELECT tag_id FROM report_looker_tags WHERE report_id = $1", report_id).Find(&looker_tags).Error
-	if err != nil {
-		return c.JSON(response.ResponseModel{
-			RetCode: "203",
-			Message: "query error",
-			Data:    err.Error(),
-		})
-	}
-
-	// get user tags
-	err = database.DBConn.Raw("SELECT tag_id FROM report_accounts_tags WHERE account_id = $1", user_id).Find(&user_tags).Error
-	if err != nil {
-		return c.JSON(response.ResponseModel{
-			RetCode: "203",
-			Message: "query error",
-			Data:    err.Error(),
-		})
-	}
-
-	// check if same tags exist between user tags and report tags
-	strMap := make(map[string]bool)
-
-	for _, str := range looker_tags {
-		strMap[str] = true
-	}
-
-	for _, str := range user_tags {
-		if strMap[str] {
-			return c.Redirect("./viewreport/" + report_id)
-		}
-	}
-
-	return c.JSON(response.ResponseModel{
-		RetCode: "400",
-		Message: "fail",
-		Data:    "no access",
-	})
-}
-
-// verify if user is authorized to acces the app specific reports
-func VerifyAuth1stLayer(c *fiber.Ctx) error {
-	report_id := c.Params("id")
-	user_id := c.Cookies("userid")
-
-	var looker_tags []string
-	var user_tags []string
-
-	// get specific category
-	err := database.DBConn.Raw("SELECT category_id FROM report_looker_tags WHERE report_id = $1", report_id).Find(&looker_tags).Error
 	if err != nil {
 		return c.JSON(response.ResponseModel{
 			RetCode: "203",

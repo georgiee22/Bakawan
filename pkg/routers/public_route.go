@@ -23,11 +23,15 @@ func SetupPublicRoutes(app *fiber.App) {
 	dashboardRoutes.Post("/change-password", controllers.ChangePassword)
 	dashboardRoutes.Post("/create-account", controllers.CreateReportsAccount)
 	dashboardRoutes.Post("/change-password", controllers.ChangePassword)
-	dashboardRoutes.Get("/test", controllers.HelloWorld)
+
+	// test route
+	testRoutes := dashboardRoutes.Group("/test")
+	testRoutes.Get("/dashboard-list/:id", middleware.VerifyAuth1stLayer, controllers.ListDashboards)
+	testRoutes.Post("/verify-app-access/:id", middleware.VerifyAuth1stLayer)
 
 	// protected route
 	protectedRoutes := dashboardRoutes.Group("/protected", middleware.AuthMiddleware)
-	protectedRoutes.Get("/app-list", controllers.ListApps)
+	protectedRoutes.Get("/app-list", controllers.ListDashboards)
 }
 
 func SetupPublicRoutesB(app *fiber.App) {
