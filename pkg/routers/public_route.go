@@ -19,6 +19,7 @@ func SetupPublicRoutes(app *fiber.App) {
 
 	// Sample Endpoints for dashboard testing
 	dashboardRoutes := v1Endpoint.Group("/dashboards")
+	// dashboardRoutes.Post("/login-authentication", controllers.ReportsLoginAuth)
 	dashboardRoutes.Post("/login-authentication", controllers.ReportsLoginAuth)
 	dashboardRoutes.Post("/change-password", controllers.ChangePassword)
 	dashboardRoutes.Post("/create-account", controllers.CreateReportsAccount)
@@ -26,12 +27,13 @@ func SetupPublicRoutes(app *fiber.App) {
 
 	// test route
 	testRoutes := dashboardRoutes.Group("/test")
-	testRoutes.Get("/dashboard-list/:id", middleware.VerifyAuth1stLayer, controllers.ListDashboards)
-	testRoutes.Post("/verify-app-access/:id", middleware.VerifyAuth1stLayer)
+	testRoutes.Get("/dashboard-list/:id", middleware.VerifyAppAccess, controllers.ListDashboards)
+	// testRoutes.Post("/verify-app-access/:id", middleware.VerifyAuth1stLayer)
+	testRoutes.Get("/dashboard-view/:id", middleware.VerifyDashboardAccess, controllers.ViewDashboard)
 
 	// protected route
 	protectedRoutes := dashboardRoutes.Group("/protected", middleware.AuthMiddleware)
-	protectedRoutes.Get("/app-list", controllers.ListDashboards)
+	protectedRoutes.Get("/dashboard-list/:id", middleware.VerifyAppAccess, controllers.ListDashboards)
 }
 
 func SetupPublicRoutesB(app *fiber.App) {
