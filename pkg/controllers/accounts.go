@@ -6,6 +6,9 @@ import (
 	"Template/pkg/utils/go-utils/database"
 	goUtils "Template/pkg/utils/go-utils/fiber"
 	"Template/pkg/utils/go-utils/passwordHashing"
+	"bytes"
+	"encoding/json"
+	"io/ioutil"
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
@@ -13,7 +16,7 @@ import (
 
 func HelloWorld(c *fiber.Ctx) error {
 	c.Set("Authorization", "hehe")
-	return c.SendString("HELLO MA'AM MAIC")
+	return c.SendString("HELLO OWRLD")
 }
 
 // get view login
@@ -70,29 +73,9 @@ func ReportsLoginAuth(c *fiber.Ctx) error {
 		})
 	}
 
-	//c.ClearCookie()
-
-	//Set the JWT token in a cookie
-	// cookie := new(fiber.Cookie)
-	// cookie.Name = "token"
-	// cookie.Value = token
-	// cookie.Expires = time.Now().Add(time.Minute * 5) // Expires in 15 mins
-	// cookie.HTTPOnly = true                           // Cannot be accessed by JavaScript
-	// cookie.Secure = false                            // Only transmitted over HTTPS
-	// c.Cookie(cookie)
-
-	// cookie := new(fiber.Cookie)
-	// cookie.Name = "userid"
-	// cookie.Value = userid
-	// cookie.Expires = time.Now().Add(time.Minute * 5) // Expires in 15 mins
-	// cookie.HTTPOnly = true                           // Cannot be accessed by JavaScript
-	// cookie.Secure = false                            // Only transmitted over HTTPS
-	// c.Cookie(cookie)
-	// c.Locals("userid", userid)
-
-	c.Append("Authorization", "Bearer "+token)
-	// c.Append("Access-Control-Allow-Credentials", "true")
-	// c.Append("Access-Control-Allow-Origin", "http://localhost:49909")
+	var data models.Login_Data
+	data.Username = user_accounts.Username
+	data.Token = token
 
 	// check if user wants to change password
 	if ispasschange != "1" {
@@ -106,13 +89,12 @@ func ReportsLoginAuth(c *fiber.Ctx) error {
 	return c.JSON(response.ResponseModel{
 		RetCode: "200",
 		Message: "success",
-		Data:    user_accounts.Username,
+		Data:    data,
 	})
 }
 
-func testHeader(w http.ResponseWriter, r *http.Request) error {
+func PostTest(c *fiber.Ctx) error {
 	user_accounts := &models.User_Accounts{}
-	c := *&fiber.Ctx{}
 
 	if parsErr := c.BodyParser(user_accounts); parsErr != nil {
 		return c.JSON(response.ResponseModel{
@@ -122,159 +104,50 @@ func testHeader(w http.ResponseWriter, r *http.Request) error {
 		})
 	}
 
-	var dbpass string
-	var userid string
-	var ispasschange string
-
-	err := database.DBConn.Debug().Raw("SELECT password, user_id, is_pass_change FROM user_accounts WHERE username=$1", user_accounts.Username).Row().Scan(&dbpass, &userid, &ispasschange)
+	jsonReq, err := json.Marshal(user_accounts)
 	if err != nil {
-		return c.JSON(response.ResponseModel{
-			RetCode: "400",
-			Message: "invalid username or password",
-			Data:    err.Error(),
-		})
+		return err
 	}
 
-	if !passwordHashing.CheckPasswordHash(user_accounts.Password, dbpass) {
+	req, err := http.NewRequest("POST", "http://127.0.0.1:8000/api/public/v1/dashboards/login-authentication", bytes.NewBuffer(jsonReq))
+	req.Header.Add("Authorization", "Bearer eme")
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("charset", "utf-8")
+	if err != nil {
+		return err
+	}
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+
+	defer resp.Body.Close()
+
+	// read the response body
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	result := json.RawMessage(body)
+	mapResult := make(map[string]interface{})
+	if unmarErr := json.Unmarshal(result, &mapResult); unmarErr != nil {
 		return c.JSON(response.ResponseModel{
 			RetCode: "400",
 			Message: "fail",
-			Data:    "invalid password",
+			Data:    unmarErr,
 		})
 	}
 
-	claims := fiber.Map{
-		"username": user_accounts.Username,
-		"userid":   userid,
-	}
-
-	token, err := goUtils.GenerateJWTSignedString(claims)
-	if err != nil {
-		return c.JSON(response.ResponseModel{
-			RetCode: "400",
-			Message: "fail",
-			Data:    err.Error(),
-		})
-	}
-
-	//c.ClearCookie()
-
-	//Set the JWT token in a cookie
-	// cookie := new(fiber.Cookie)
-	// cookie.Name = "token"
-	// cookie.Value = token
-	// cookie.Expires = time.Now().Add(time.Minute * 5) // Expires in 15 mins
-	// cookie.HTTPOnly = true                           // Cannot be accessed by JavaScript
-	// cookie.Secure = false                            // Only transmitted over HTTPS
-	// c.Cookie(cookie)
-
-	// cookie := new(fiber.Cookie)
-	// cookie.Name = "userid"
-	// cookie.Value = userid
-	// cookie.Expires = time.Now().Add(time.Minute * 5) // Expires in 15 mins
-	// cookie.HTTPOnly = true                           // Cannot be accessed by JavaScript
-	// cookie.Secure = false                            // Only transmitted over HTTPS
-	// c.Cookie(cookie)
-	// c.Locals("userid", userid)
-
-	c.Set("Authorization", "Bearer "+token)
-	w.Header().Set("Authorization", "Bearer ")
-
-	// check if user wants to change password
-	if ispasschange != "1" {
-		return c.JSON(response.ResponseModel{
-			RetCode: "100",
-			Message: "continue",
-			Data:    "change password",
-		})
-	}
-
+	// send the response back to the client
 	return c.JSON(response.ResponseModel{
 		RetCode: "200",
 		Message: "success",
-		Data:    user_accounts.Username,
+		Data:    mapResult["data"],
 	})
 }
-
-// GateToken := fmt.Sprintf("bearer %s", decryptedGateToken)
-// 		// fmt.Println("PATH:", path)
-// 		req, reqErr := http.NewRequest(routeResponse.Method, path, bytes.NewBuffer(jsonReq))
-// 		req.Header.Add("Authorization", GateToken)
-// 		req.Header.Add("Content-Type", "application/json")
-// 		req.Header.Add("charset", "utf-8")
-
-// 		// fmt.Println("HTTP REQUEST TLS STATUS:", req)
-// 		if reqErr != nil {
-// 			middleware.SystemLoggerError(c.Path(), "http request error", deviceId, reqErr)
-// 			return c.JSON(response.ResponseModel{
-// 				RetCode: "400",
-// 				Message: "Error",
-// 				Result: errors.ErrorModel{
-// 					Message:   "Error in http request",
-// 					IsSuccess: false,
-// 					Error:     reqErr,
-// 					Data:      reqErr.Error(),
-// 				},
-// 			})
-// 		}
-
-// 		client := &http.Client{}
-// 		resp, clientErr := client.Do(req)
-// 		// fmt.Println("HTTP RESPONSE STATUS:", resp.Status)
-// 		if clientErr != nil {
-// 			middleware.SystemLoggerError(c.Path(), "client response error", deviceId, clientErr)
-// 			return c.JSON(response.ResponseModel{
-// 				RetCode: "400",
-// 				Message: "Error",
-// 				Result: errors.ErrorModel{
-// 					Message:   "Error in client response",
-// 					IsSuccess: false,
-// 					Error:     clientErr,
-// 					Data:      clientErr.Error(),
-// 				},
-// 			})
-// 		}
-
-// 		defer resp.Body.Close()
-// 		body, readErr := ioutil.ReadAll(resp.Body)
-// 		if readErr != nil {
-// 			middleware.SystemLoggerError(c.Path(), "read error", deviceId, readErr)
-// 			return c.JSON(response.ResponseModel{
-// 				RetCode: "400",
-// 				Message: "Error",
-// 				Result: errors.ErrorModel{
-// 					Message:   "Error in reading http request",
-// 					IsSuccess: false,
-// 					Error:     readErr,
-// 					Data:      readErr.Error(),
-// 				},
-// 			})
-// 		}
-
-// 		result := json.RawMessage(body)
-// 		mapResult := make(map[string]interface{})
-// 		if unmarErr := json.Unmarshal(result, &mapResult); unmarErr != nil {
-// 			middleware.SystemLoggerError(c.Path(), "unmarshal error", deviceId, unmarErr)
-// 			return c.JSON(response.ResponseModel{
-// 				RetCode: "400",
-// 				Message: "Error",
-// 				Result: errors.ErrorModel{
-// 					Message:   "unmarshal error",
-// 					IsSuccess: false,
-// 					Error:     unmarErr,
-// 					Data:      unmarErr.Error(),
-// 				},
-// 			})
-// 		}
-
-// 		middleware.SystemLoggerAPI(path, req, c.Path(), resp, mapResult, c.IP()+":"+c.Port(), deviceId)
-// 		fmt.Println("GATE ROUTE DONE")
-// 		return c.JSON(response.ResponseModel{
-// 			RetCode: "200",
-// 			Message: "success",
-// 			Result:  mapResult,
-// 		})
-// 	}
 
 // get view change password, send user name
 func ChangePasswordView(c *fiber.Ctx) error {
@@ -339,7 +212,7 @@ func ListDashboards(c *fiber.Ctx) error {
 	id := c.Params("id")
 	result := []models.Dashboards{}
 
-	err := database.DBConn.Raw("SELECT DISTINCT dashboard_id, dashboard_title FROM dashboard_apps_tags WHERE app_id = $1", id).Find(&result, &dashboard_list).Error
+	err := database.DBConn.Raw("SELECT DISTINCT dashboard_id, dashboard_title, dashboard_link FROM dashboard_apps_tags WHERE app_id = $1", id).Find(&result, &dashboard_list).Error
 	if err != nil {
 		return c.JSON(response.ResponseModel{
 			RetCode: "203",

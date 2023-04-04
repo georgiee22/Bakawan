@@ -29,11 +29,16 @@ func SetupPublicRoutes(app *fiber.App) {
 	testRoutes := dashboardRoutes.Group("/test")
 	testRoutes.Get("/dashboard-list/:id", middleware.VerifyAppAccess, controllers.ListDashboards)
 	// testRoutes.Post("/verify-app-access/:id", middleware.VerifyAuth1stLayer)
-	testRoutes.Get("/dashboard-view/:id", middleware.VerifyDashboardAccess, controllers.ViewDashboard)
+	// testRoutes.Get("/dashboard-view/:id", middleware.VerifyDashboardAccess, controllers.ViewDashboard)
+	// testRoutes.Post("/test", controllers.PostTest)
 
 	// protected route
 	protectedRoutes := dashboardRoutes.Group("/protected", middleware.AuthMiddleware)
 	protectedRoutes.Get("/dashboard-list/:id", middleware.VerifyAppAccess, controllers.ListDashboards)
+
+	//Front-End
+	bakawanRoutes := app.Group("/Bakawan")
+	bakawanRoutes.Post("/login", controllers.LoginAPI)
 }
 
 func SetupPublicRoutesB(app *fiber.App) {
