@@ -19,7 +19,6 @@ func SetupPublicRoutes(app *fiber.App) {
 
 	// Sample Endpoints for dashboard testing
 	dashboardRoutes := v1Endpoint.Group("/dashboards")
-	// dashboardRoutes.Post("/login-authentication", controllers.ReportsLoginAuth)
 	dashboardRoutes.Post("/login-authentication", controllers.ReportsLoginAuth)
 	dashboardRoutes.Post("/change-password", controllers.ChangePassword)
 	dashboardRoutes.Post("/create-account", controllers.CreateReportsAccount)

@@ -6,27 +6,11 @@ import (
 	"Template/pkg/utils/go-utils/database"
 	goUtils "Template/pkg/utils/go-utils/fiber"
 	"Template/pkg/utils/go-utils/passwordHashing"
-	"bytes"
-	"encoding/json"
-	"io/ioutil"
-	"net/http"
 
 	"github.com/gofiber/fiber/v2"
 )
 
-func HelloWorld(c *fiber.Ctx) error {
-	c.Set("Authorization", "hehe")
-	return c.SendString("HELLO OWRLD")
-}
-
-// get view login
-func ReportsLogin(c *fiber.Ctx) error {
-	return c.Render("login", fiber.Map{
-		"Title": "Login",
-	})
-}
-
-// add functionality, if first login ask to change password else continue to home
+// Post, Login Authentication, /login-authentication
 func ReportsLoginAuth(c *fiber.Ctx) error {
 	user_accounts := &models.User_Accounts{}
 
@@ -38,6 +22,7 @@ func ReportsLoginAuth(c *fiber.Ctx) error {
 		})
 	}
 
+	// get the following variables in db
 	var dbpass string
 	var userid string
 	var ispasschange string
@@ -51,6 +36,7 @@ func ReportsLoginAuth(c *fiber.Ctx) error {
 		})
 	}
 
+	// check password hash if same
 	if !passwordHashing.CheckPasswordHash(user_accounts.Password, dbpass) {
 		return c.JSON(response.ResponseModel{
 			RetCode: "400",
@@ -59,11 +45,13 @@ func ReportsLoginAuth(c *fiber.Ctx) error {
 		})
 	}
 
+	// declare claims for token
 	claims := fiber.Map{
 		"username": user_accounts.Username,
 		"userid":   userid,
 	}
 
+	// create token with claims
 	token, err := goUtils.GenerateJWTSignedString(claims)
 	if err != nil {
 		return c.JSON(response.ResponseModel{
@@ -73,9 +61,14 @@ func ReportsLoginAuth(c *fiber.Ctx) error {
 		})
 	}
 
+	// initialize data to be sent to front end
 	var data models.Login_Data
 	data.Username = user_accounts.Username
+	// token is necessary to be sent
 	data.Token = token
+
+	// check if remember me is set
+	// id := uuid.New()
 
 	// check if user wants to change password
 	if ispasschange != "1" {
@@ -93,63 +86,8 @@ func ReportsLoginAuth(c *fiber.Ctx) error {
 	})
 }
 
-func PostTest(c *fiber.Ctx) error {
-	user_accounts := &models.User_Accounts{}
-
-	if parsErr := c.BodyParser(user_accounts); parsErr != nil {
-		return c.JSON(response.ResponseModel{
-			RetCode: "201",
-			Message: "fail",
-			Data:    parsErr.Error(),
-		})
-	}
-
-	jsonReq, err := json.Marshal(user_accounts)
-	if err != nil {
-		return err
-	}
-
-	req, err := http.NewRequest("POST", "http://127.0.0.1:8000/api/public/v1/dashboards/login-authentication", bytes.NewBuffer(jsonReq))
-	req.Header.Add("Authorization", "Bearer eme")
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("charset", "utf-8")
-	if err != nil {
-		return err
-	}
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-
-	defer resp.Body.Close()
-
-	// read the response body
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-
-	result := json.RawMessage(body)
-	mapResult := make(map[string]interface{})
-	if unmarErr := json.Unmarshal(result, &mapResult); unmarErr != nil {
-		return c.JSON(response.ResponseModel{
-			RetCode: "400",
-			Message: "fail",
-			Data:    unmarErr,
-		})
-	}
-
-	// send the response back to the client
-	return c.JSON(response.ResponseModel{
-		RetCode: "200",
-		Message: "success",
-		Data:    mapResult["data"],
-	})
-}
-
 // get view change password, send user name
+// use for forgot password
 func ChangePasswordView(c *fiber.Ctx) error {
 	// send user data to render
 	// change into
@@ -206,13 +144,13 @@ func ChangePassword(c *fiber.Ctx) error {
 	})
 }
 
-// get list dashboards
+// get list dashboards /dashboard-list/:id
 func ListDashboards(c *fiber.Ctx) error {
 	dashboard_list := []models.Dashboard_Apps_Tags_View{}
 	id := c.Params("id")
 	result := []models.Dashboards{}
 
-	err := database.DBConn.Raw("SELECT DISTINCT dashboard_id, dashboard_title, dashboard_link FROM dashboard_apps_tags WHERE app_id = $1", id).Find(&result, &dashboard_list).Error
+	err := database.DBConn.Raw("SELECT DISTINCT dashboard_id, dashboard_title, dashboard_link FROM dashboard_apps_tags WHERE app_id = $1 ORDER BY dashboard_id ASC", id).Find(&result, &dashboard_list).Error
 	if err != nil {
 		return c.JSON(response.ResponseModel{
 			RetCode: "203",
